@@ -30,10 +30,15 @@ if __name__ == "__main__":
 
     ## Set up directory structure for job log, out and error
     this_dir = Path(__file__).parent
+    for dir in ['log', 'results']:
+        new_dir = join(this_dir, dir)
+        if not isdir(new_dir):
+            mkdir(new_dir)
 
     ## Making the DAG
     pi_dag = dags.DAG()
 
+    # Define the Sampling Jobs (submit file)
     sample_sub = htcondor.Submit(
         executable = 'pi_samples.py',
         arguments = '--seed $(seed) --iters $(iters) --threads $(threads) --outfile $(outfile)',
