@@ -36,23 +36,27 @@ if __name__ == "__main__":
 
     sample_sub = htcondor.Submit(
         executable = 'pi_samples.py',
-        arguments = '--seed $(seed) --iters $(iters) --threads $(threads) --outfile samples_$(ProcId).csv',
+        arguments = '--seed $(seed) --iters $(iters) --threads $(threads) --outfile $(outfile)',
         should_transfer_files = "YES",
+        transfer_output_files = "$(outfile)",
         initialdir = 'results',
         log = '../log/samples.log',
-        output = '../out/samples_$(ProcId).out',
-        error = '../err/samples_$(ProcId).err',
+        output = '../log/samples.out',
+        error = '../log/samples.err',
         request_cpus = '$(threads)',
         request_memory = '1GB',
         request_disk = '500MB',
     )
     # root RNG seed
-    seed(seed_num)
-    seed_nums = sample(range(1000000), k=njobs)
+    seed(args.seed)
+    seed_nums = sample(range(1000000), k=args.njobs)
     # construct input arg dicts for sampling jobs
     sample_vars = []
-    for i in seed_nums:
-        sample_vars.append({'seed': str(i), 'iters': str(iters), 'threads': str(threads)}
+    for i in range(args.njobs):
+        sample_vars.append(
+            {'seed': str(seed_nums[i]), 'iters': str(args.iters), 'threads': str(args.threads),
+            'outfile': 'samples_{}.csv'.format(i)}
+        )
     # Add sampling jobs layer to DAG
     sample_layer = pi_dag.layer(
         name = 'sample', submit_description = sample_sub,
