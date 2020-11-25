@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--infiles', nargs='+', help="list of input files")
     parser.add_argument('--estimator', dest='est', choices=['area', 'func'],
-        help="Which estimator type to plot") 
+        help="Which estimator type to plot")
     args = parser.parse_args()
 
     fig, ax = plt.subplots()
@@ -31,6 +31,7 @@ if __name__ == "__main__":
         ax.semilogx(sample_idx, subset_df.estimate, '.-', c='blue', alpha=0.5)
 
     ax.set_yticks(np.arange(0,1.5,0.25)*np.pi)
+    ax.set_ylim(-0.1, 4.1)
     ax.set_yticklabels(
         ['0', r'$\pi/4$', r'$\pi/2$', r'$3\pi/4$', r'$\pi$', r'$5\pi/4$']
     )
