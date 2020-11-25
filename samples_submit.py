@@ -12,12 +12,12 @@ sample_sub = htcondor.Submit(
     arguments = '--seed $(seed) --iters $(iters) --threads $(threads) --outfile samples_$(ProcID).csv',
     should_transfer_files = "YES",
     initialdir = 'results',
-    log = '/home/jovyan/work/log/samples.log',
-    output = '/home/jovyan/work/out/samples_$(ProcID).out',
-    error = '/home/jovyan/work/err/samples_$(ProcID).err',
+    log = '../log/samples.log',
+    output = '../out/samples_$(ProcID).out',
+    error = '../err/samples_$(ProcID).err',
     request_cpus = '$(threads)',
-    request_memory = '500MB',
-    request_disk = '128MB',
+    request_memory = '1GB',
+    request_disk = '500MB',
 )
 # root RNG seed
 seed(seed_num)
