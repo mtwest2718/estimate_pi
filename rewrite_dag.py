@@ -79,7 +79,7 @@ if __name__ == "__main__":
     )
     # construct input arg dicts for trace plotting jobs
     trace_vars = []
-    for est_type in ['area']:
+    for est_type in ['area', 'func']:
         trace_vars.append({'infiles': files_list, 'est_type': est_type})
     # add the summary job layer to DAG
     trace_layer = sample_layer.child_layer(
