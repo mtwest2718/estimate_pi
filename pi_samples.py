@@ -16,7 +16,7 @@ def sample_square(seed, iters):
     samples['in_circle'] = samples.x**2+samples.y**2 < 1
     samples['cumm_success'] = samples.in_circle.cumsum()
     samples['est_area'] = 4*samples.cumm_success/np.arange(1,iters+1)
-    
+
     # Estimate PI using stochastic integration of (1-x^2)
     Z_x = (1-samples.x**2)**0.5
     samples['est_func'] = 4*Z_x.cumsum()/np.arange(1,iters+1)
@@ -35,6 +35,10 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--outfile', default='samples.csv',
         help="Output filename")
     args = parser.parse_args()
+
+    print("# Input arguments for this job")
+    for (k, v) in vars(args).items():
+        print("{} = {}".format(k, v))
 
     if args.iters % args.threads != 0:
         sys.exit("--iters ({}) must be a multiple of --threads ({})".format(args.iters, args.threads))

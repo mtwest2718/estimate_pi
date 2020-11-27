@@ -46,8 +46,8 @@ if __name__ == "__main__":
         transfer_output_files = "$(outfile)",
         initialdir = 'results',
         log = '../log/samples.log',
-        output = '../log/samples.out',
-        error = '../log/samples.err',
+        output = '../log/samples_$(id).out',
+        error = '../log/samples_$(id).err',
         request_cpus = '$(threads)',
         request_memory = '1GB',
         request_disk = '500MB',
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     for i in range(args.njobs):
         sample_vars.append(
             {'seed': str(seed_nums[i]), 'iters': str(args.iters), 'threads': str(args.threads),
-            'outfile': 'samples_{}.csv'.format(i)}
+            'outfile': 'samples_{}.csv'.format(i), "id": str(i)}
         )
     # Add sampling jobs layer to DAG
     sample_layer = pi_dag.layer(
@@ -76,8 +76,8 @@ if __name__ == "__main__":
         should_transfer_files = "YES",
         transfer_input_files = 'results/',
         log = 'log/trace.log',
-        output = 'log/trace.out',
-        error = 'log/trace.err',
+        output = 'log/trace_$(est_type).out',
+        error = 'log/trace_$(est_type).err',
         request_cpus = '1',
         request_memory = '1GB',
         request_disk = '3GB',
