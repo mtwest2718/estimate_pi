@@ -10,6 +10,26 @@ import pdb
 import htcondor
 from htcondor import dags
 
+def cli_parser():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-s', '--seed', type=int, default=42,
+        help="Root RNG seed")
+    parser.add_argument('-j', '--njobs', type=int, default=1,
+        help="Number of parallel jobs")
+    parser.add_argument('-i', '--iters', type=int, default=1000,
+        help="Number of iterations per job")
+    parser.add_argument('-t', '--threads', type=int, default=1,
+        help="Number of multiprocessing threads")
+    parser.add_argument('--submit', action='store_true', default=False,
+        help="Generate DAG *AND* submit workflow to queue")
+    args = parser.parse_args()
+
+    if args.iters % args.threads != 0:
+        sys.exit("--iters ({}) must be a multiple of --threads ({})".format(args.iters, args.threads))
+
+    return args
+
 def sampling_jobs(rng_seed, njobs, iters, threads):
     # Define the Sampling Jobs (submit file)
     sample_sub = htcondor.Submit(
@@ -51,9 +71,11 @@ def trace_plot_jobs(njobs, threads):
         request_disk = '3GB',
     )
     # list of input files for trace plots
-    files_list = [f"samples_{j}.csv" for j in range(args.njobs)]
+    files_list = [f"samples_{j}.csv" for j in range(njobs)]
     if args.threads > 1:
-        files_list = [f.replace('.', f"_{i}.") for i in range(args.threads) for f in files_list]
+        files_list = [
+            f.replace('.', f"_{i}.") for i in range(threads) for f in files_list
+        ]
     # construct input arg dicts for trace plotting jobs
     trace_vars = []
     for est_type in ['area', 'func']:
@@ -62,22 +84,8 @@ def trace_plot_jobs(njobs, threads):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('-s', '--seed', type=int, default=42,
-        help="Root RNG seed")
-    parser.add_argument('-j', '--njobs', type=int, default=1,
-        help="Number of parallel jobs")
-    parser.add_argument('-i', '--iters', type=int, default=1000,
-        help="Number of iterations per job")
-    parser.add_argument('-t', '--threads', type=int, default=1,
-        help="Number of multiprocessing threads")
-    parser.add_argument('--submit', action='store_true', default=False,
-        help="Generate DAG *AND* submit workflow to queue")
-    args = parser.parse_args()
-
-    if args.iters % args.threads != 0:
-        sys.exit("--iters ({}) must be a multiple of --threads ({})".format(args.iters, args.threads))
+    # parser the input arguments for DAG
+    args = cli_parser()
 
     ## Set up directory structure for job log, out and error
     this_dir = Path(__file__).parent
@@ -94,25 +102,23 @@ if __name__ == "__main__":
         args.seed, args.njobs, args.iters, args.threads
     )
     sample_layer = pi_dag.layer(
-        name = 'sample', submit_description = sample_sub,
-        vars = sample_vars
+        name='sample', submit_description=sample_sub, vars=sample_vars
     )
 
-    # add the summary job layer to DAG
+    # Add the summary job layer to DAG
     trace_sub, trace_vars = trace_plot_jobs(args.njobs, args.threads)
     trace_layer = sample_layer.child_layer(
-        name = 'trace', submit_description = trace_sub,
-        vars = trace_vars
+        name='trace', submit_description=trace_sub, vars=trace_vars
     )
 
-    # Write DAG file to disk
+    ## Write DAG file to disk
     dag_file = dags.write_dag(pi_dag, this_dir, dag_file_name='pi.dag')
 
+    ## Programmatically submit full workflow
     if args.submit:
         # Generate condor_submit file for DAG
         dag_submit = htcondor.Submit.from_dag(
-            str(dag_file),
-            {'force': 1, 'batch-name': 'MmmmmPi'}
+            str(dag_file), {'force': 1, 'batch-name': 'MmmmmPi'}
         )
 
         schedd = htcondor.Schedd()
