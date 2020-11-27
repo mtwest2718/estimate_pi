@@ -43,7 +43,6 @@ if __name__ == "__main__":
         executable = 'pi_samples.py',
         arguments = '--seed $(seed) --iters $(iters) --threads $(threads) --outfile $(outfile)',
         should_transfer_files = "YES",
-        transfer_output_files = "$(outfile)",
         initialdir = 'results',
         log = '../log/samples.log',
         output = '../log/samples_$(id).out',
@@ -69,7 +68,6 @@ if __name__ == "__main__":
     )
 
     # Define the Trace plot Jobs (submit file)
-    files_list = ' '.join(f"samples_{j}.csv" for j in range(args.njobs))
     trace_sub = htcondor.Submit(
         executable = 'pi_trace.py',
         arguments = '--infiles $(infiles) --estimator $(est_type)',
@@ -82,10 +80,14 @@ if __name__ == "__main__":
         request_memory = '1GB',
         request_disk = '3GB',
     )
+    # list of input files for trace plots
+    files_list = [f"samples_{j}.csv" for j in range(args.njobs)]
+    if args.threads > 1:
+        files_list = [f.replace('.', f"_{i}.") for i in range(args.threads) for f in files_list]
     # construct input arg dicts for trace plotting jobs
     trace_vars = []
     for est_type in ['area', 'func']:
-        trace_vars.append({'infiles': files_list, 'est_type': est_type})
+        trace_vars.append({'infiles': ' '.join(files_list), 'est_type': est_type})
     # add the summary job layer to DAG
     trace_layer = sample_layer.child_layer(
         name = 'trace', submit_description = trace_sub,
