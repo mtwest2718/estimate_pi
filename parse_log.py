@@ -22,25 +22,46 @@ if __name__ == "__main__":
         # Unique Job ID
         ID = "{}.{}.{}".format(event['Cluster'], event['Proc'], event['Subproc'])
         # Job Event type
-        EventType = event['MyType']
+        jet = event['MyType']
 
-        if ID not in events and EventType == 'SubmitEvent':
+        if ID not in events and jet == 'SubmitEvent':
             # Job task is submitted to queue
-            events[ID] = {'ID': ID, 'JobID': event['LogNotes'], 'SubmitTime': event['EventTime']}
+            events[ID] = {
+                'ID': ID, 'JobID': event['LogNotes'],
+                'SubmitTime': event['EventTime']                    # UTC Date & Time
+            }
         else:
             # Job begins running on Execute Node
-            if EventType == 'ExecuteEvent':
-                events[ID].update({'ExecTime': event['EventTime']})
-            # Transfer out of output files begins
-            elif EventType == 'FileTransferEvent' and event['Type'] == 5:
-                events[ID].update({'TransferOutTime': event['EventTime']})
-            # Job is removed from queue
-            elif EventType == 'JobTerminatedEvent':
+            if jet == 'ExecuteEvent':
                 events[ID].update({
-                    'TermTime': event['EventTime'], 'TermStatus': event['ReturnValue'],
-                    'MemReq': event['Memory'], 'MemUse': event['MemoryUsage'],
-                    'DiskReq': event['RequestDisk'], 'DiskUse': event['DiskUsage'],
+                    'ExecTime': event['EventTime']                  # UTC Date & Time
+                })
+            # Transfer out of output files begins
+            elif jet == 'FileTransferEvent' and event['Type'] == 5:
+                events[ID].update({
+                    'TransferOutTime': event['EventTime']           # UTC Date & Time
+                })
+            # Job is removed from queue
+            elif jet == 'JobTerminatedEvent':
+                # Sometimes usage doesn't register
+                if 'CpusUsage' not in event:
+                    event['CpusUsage'] = 'NA'
+
+                events[ID].update({
+                    'TermTime': event['EventTime'],                 # UTC Date & Time
+                    'TermStatus': event['ReturnValue'],
+                    'ElapsedTime': event['TotalRemoteUsage'],       # Seconds: Usr & Sys
+                    'MemReq': event['RequestMemory'],               # MB
+                    'MemAlloc': event['Memory'],                    # MB
+                    'MemUse': event['MemoryUsage'],                 # MB
+                    'BytesSent': event['TotalSentBytes'],           # Bytes
+                    'BytesReceived': event['TotalReceivedBytes'],   # Bytes
+                    'DiskReq': event['RequestDisk'],                # KB
+                    'DiskAlloc': event['Disk'],                     # KB
+                    'DiskUse': event['DiskUsage'],                  # KB
                     'CpusReq': event['RequestCpus'],
+                    'CpusAlloc': event['Cpus'],
+                    'CpusUse': event['CpusUsage']
                 })
 
     # Restructure data into tabular format
