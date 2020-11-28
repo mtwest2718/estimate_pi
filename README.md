@@ -2,6 +2,7 @@
 This is a short example of how one can use the HTCondor Python API to programmatically construct a multi-step analysis pipeline. The two steps are
 - Simulate random numbers to estimate Pi
 - Produce trace plots from the collection of output files
+I am leveraging a Docker container that automatically starts up a single-node HTCondor pool to run this workflow on my quad-core Windows laptop.
 
 ## What is in here?
 - Needed stuff
