@@ -37,12 +37,12 @@ def sampling_jobs(rng_seed, njobs, iters, threads):
         arguments = '--seed $(seed) --iters $(iters) --threads $(threads) --outfile $(outfile)',
         should_transfer_files = "YES",
         initialdir = 'results',
-        log = '../log/samples.log',
-        output = '../log/samples_$(id).out',
-        error = '../log/samples_$(id).err',
+        log = '../logs/samples.log',
+        output = '../logs/samples_$(id).out',
+        error = '../logs/samples_$(id).err',
         request_cpus = '$(threads)',
         request_memory = '1GB',
-        request_disk = '500MB',
+        request_disk = '1GB',
     )
     # root RNG seed
     seed(rng_seed)
@@ -63,9 +63,9 @@ def trace_plot_jobs(njobs, threads):
         arguments = '--infiles $(infiles) --estimator $(est_type)',
         should_transfer_files = "YES",
         transfer_input_files = 'results/',
-        log = 'log/trace.log',
-        output = 'log/trace_$(est_type).out',
-        error = 'log/trace_$(est_type).err',
+        log = 'logs/trace.log',
+        output = 'logs/trace_$(est_type).out',
+        error = 'logs/trace_$(est_type).err',
         request_cpus = '1',
         request_memory = '1GB',
         request_disk = '3GB',
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     ## Set up directory structure for job log, out and error
     this_dir = Path(__file__).parent
-    for dir in ['log', 'results']:
+    for dir in ['logs', 'results']:
         new_dir = join(this_dir, dir)
         if not isdir(new_dir):
             mkdir(new_dir)
