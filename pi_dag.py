@@ -23,6 +23,8 @@ def cli_parser():
         help="Number of multiprocessing threads")
     parser.add_argument('--submit', action='store_true', default=False,
         help="Generate DAG *AND* submit workflow to queue")
+    parser.add_argument('-v','--verbose', action='store_true', default=False,
+        help="Print out DAG creation steps")
     args = parser.parse_args()
 
     if args.iters % args.threads != 0:
@@ -95,33 +97,39 @@ if __name__ == "__main__":
             mkdir(new_dir)
 
     ## Making the DAG
+    if args.verbose: print("Generate DAG object")
     pi_dag = dags.DAG()
 
     # Add sampling jobs layer to DAG
     sample_sub, sample_vars = sampling_jobs(
         args.seed, args.njobs, args.iters, args.threads
     )
+    if args.verbose: print("\tAdd sampling layer to DAG")
     sample_layer = pi_dag.layer(
         name='sample', submit_description=sample_sub, vars=sample_vars
     )
 
-    # Add the summary job layer to DAG
+    # Add the plotting job layer to DAG
     trace_sub, trace_vars = trace_plot_jobs(args.njobs, args.threads)
+    if args.verbose: print("\tAdd plotting layer to DAG")
     trace_layer = sample_layer.child_layer(
         name='trace', submit_description=trace_sub, vars=trace_vars
     )
 
     ## Write DAG file to disk
+    if args.verbose: print("\tWrite out DAG and associated submit files")
     dag_file = dags.write_dag(pi_dag, this_dir, dag_file_name='pi.dag')
 
     ## Programmatically submit full workflow
     if args.submit:
         # Generate condor_submit file for DAG
+        if args.verbose: print("\tWrite out submit file for DAG")
         dag_submit = htcondor.Submit.from_dag(
             str(dag_file), {'force': 1, 'batch-name': 'MmmmmPi'}
         )
 
         schedd = htcondor.Schedd()
+        if args.verbose: print("Submit workflow to queue")
         # Connect to the Scheduler and submit the DAGman job
         with schedd.transaction() as txn:
             cluster_id = dag_submit.queue(txn)

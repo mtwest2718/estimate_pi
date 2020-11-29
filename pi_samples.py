@@ -56,6 +56,7 @@ if __name__ == "__main__":
             for k, df in enumerate(samples):
                 # Add thread number to output samples filename
                 outfile = args.outfile.replace('.csv', '_{}.csv'.format(k))
+                print("Saving subprocess {} table to disk".format(k))
                 df.to_csv(outfile, index=False)
     else:
         samples = sample_square(args.seed, args.iters)

@@ -14,6 +14,7 @@ if __name__ == "__main__":
         help="Which estimator type to plot")
     args = parser.parse_args()
 
+    print("Generating base figure")
     fig, ax = plt.subplots()
     ax.set(xlabel='Samples (#)', ylabel='Estimate')
     ax.set(title=r'Stochastic estimate of $\pi$ using {}'.format(args.est.upper()))
@@ -28,6 +29,7 @@ if __name__ == "__main__":
         subset_df = df.iloc[sample_idx-1]
 
         # plot trace with semilog-X axis in base 10
+        print("\tPlot data from {}".format(csvfile))
         ax.semilogx(sample_idx, subset_df.estimate, '.-', c='blue', alpha=0.5)
 
     ax.set_yticks(np.arange(0,1.5,0.25)*np.pi)
@@ -36,4 +38,5 @@ if __name__ == "__main__":
         ['0', r'$\pi/4$', r'$\pi/2$', r'$3\pi/4$', r'$\pi$', r'$5\pi/4$']
     )
 
+    print("Saving figure to disk")
     fig.savefig('pi_trace_{}.png'.format(args.est))
