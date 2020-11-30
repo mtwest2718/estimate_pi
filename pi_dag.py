@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-
 import argparse
-from random import sample, seed
+import random
 from pathlib import Path
 from os import mkdir
 from os.path import isdir, join
@@ -32,6 +31,7 @@ def cli_parser():
 
     return args
 
+
 def sampling_jobs(rng_seed, njobs, iters, threads):
     # Define the Sampling Jobs (submit file)
     sample_sub = htcondor.Submit(
@@ -47,8 +47,8 @@ def sampling_jobs(rng_seed, njobs, iters, threads):
         request_disk = '1GB',
     )
     # root RNG seed
-    seed(rng_seed)
-    seed_nums = sample(range(1000000), k=njobs)
+    random.seed(rng_seed)
+    seed_nums = random.sample(range(1000000), k=njobs)
     # construct input arg dicts for sampling jobs
     sample_vars = []
     for i in range(njobs):
@@ -56,7 +56,9 @@ def sampling_jobs(rng_seed, njobs, iters, threads):
             {'seed': str(seed_nums[i]), 'iters': str(iters), 'threads': str(threads),
             'outfile': 'samples_{}.csv'.format(i), "id": str(i)}
         )
-    return sample_sub, sample_vars
+
+    return {'submit': sample_sub, 'vars': sample_vars}
+
 
 def trace_plot_jobs(njobs, threads):
     # Define the Trace plot Jobs (submit file)
@@ -82,7 +84,8 @@ def trace_plot_jobs(njobs, threads):
     trace_vars = []
     for est_type in ['area', 'func']:
         trace_vars.append({'infiles': ' '.join(files_list), 'est_type': est_type})
-    return trace_sub, trace_vars
+
+    return {'submit': trace_sub, 'vars': trace_vars}
 
 
 if __name__ == "__main__":
@@ -101,19 +104,19 @@ if __name__ == "__main__":
     pi_dag = dags.DAG()
 
     # Add sampling jobs layer to DAG
-    sample_sub, sample_vars = sampling_jobs(
-        args.seed, args.njobs, args.iters, args.threads
-    )
+    sampling = sampling_jobs(args.seed, args.njobs, args.iters, args.threads)
     if args.verbose: print("\tAdd sampling layer to DAG")
     sample_layer = pi_dag.layer(
-        name='sample', submit_description=sample_sub, vars=sample_vars
+        name='sample',
+        submit_description=sampling['submit'], vars=sampling['vars']
     )
 
     # Add the plotting job layer to DAG
-    trace_sub, trace_vars = trace_plot_jobs(args.njobs, args.threads)
+    plotting = trace_plot_jobs(args.njobs, args.threads)
     if args.verbose: print("\tAdd plotting layer to DAG")
     trace_layer = sample_layer.child_layer(
-        name='trace', submit_description=trace_sub, vars=trace_vars
+        name='trace',
+        submit_description=plotting['submit'], vars=plotting['vars']
     )
 
     ## Write DAG file to disk
