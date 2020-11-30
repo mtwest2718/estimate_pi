@@ -1,5 +1,3 @@
 # ignore logs and results directories
-out/**
-err/**
-log/**
+logs/**
 results/**
