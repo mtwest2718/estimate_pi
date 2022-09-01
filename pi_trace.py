@@ -9,28 +9,22 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--infiles', nargs='+', help="list of input files")
-    parser.add_argument('--estimator', dest='est', choices=['area', 'func'],
-        help="Which estimator type to plot")
+    parser.add_argument('--infile', help="summary of estimates")
     args = parser.parse_args()
 
     print("Generating base figure")
     fig, ax = plt.subplots()
     ax.set(xlabel='Samples (#)', ylabel='Estimate')
-    ax.set(title=r'Stochastic estimate of $\pi$ using {}'.format(args.est.upper()))
+    ax.set(title=r'Stochastic estimate of $\pi$ using AREA')
     ax.grid()
 
-    col = 'est_' + args.est
-    for m, csvfile in enumerate(args.infiles):
-        df = pd.read_csv(csvfile, usecols=[col])
-        df.rename(columns={col: 'estimate'}, inplace=True)
-        # subset of estimates where #-samples is an power of 2
-        sample_idx = 2**np.arange(0, np.floor(np.log2(len(df)))+1)
-        subset_df = df.iloc[sample_idx-1]
+    df = pd.read_csv(args.infile)
+    idx = np.array(df.columns, dtype=np.uint)
 
-        # plot trace with semilog-X axis in base 10
-        print("\tPlot data from {}".format(csvfile))
-        ax.semilogx(sample_idx, subset_df.estimate, '.-', c='blue', alpha=0.5)
+    # plot trace with semilog-X axis in base 10
+    print("\tPlot data from {}".format(args.infile))
+    for n in range(len(df)):
+        ax.semilogx(idx, df.iloc[n], '.-', c='blue', alpha=0.5)
 
     ax.set_yticks(np.arange(0,1.5,0.25)*np.pi)
     ax.set_ylim(-0.1, 4.1)
@@ -39,4 +33,4 @@ if __name__ == "__main__":
     )
 
     print("Saving figure to disk")
-    fig.savefig('pi_trace_{}.png'.format(args.est))
+    fig.savefig('pi_trace.png')
