@@ -13,10 +13,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # summary output file setup
-    df = pd.read_csv(arg.infiles[0])
+    df = pd.read_csv(args.infiles[0])
     sample_idx = np.array(
         2**np.arange(0, np.floor(np.log2(len(df)))+1), dtype=np.uint)
-    summ_array = np.zeros([len(arg.infiles), len(sample_idx)], dtype=np.single)
+    summ_array = np.zeros([len(args.infiles), len(sample_idx)], dtype=np.single)
 
     for m, csvfile in enumerate(args.infiles):
         df = pd.read_csv(csvfile, usecols=['est_area'])
@@ -25,4 +25,4 @@ if __name__ == "__main__":
 
     # Convert to a pandas DataFrame with index labels
     summ_df = pd.DataFrame(summ_array, columns=list(map(str,sample_idx)))
-    samples.to_csv(args.outfile, index=False)
+    summ_df.to_csv(args.outfile, index=False)
