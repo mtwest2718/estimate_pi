@@ -17,10 +17,6 @@ def sample_square(seed, iters):
     samples['cumm_success'] = samples.in_circle.cumsum()
     samples['est_area'] = 4*samples.cumm_success/np.arange(1,iters+1)
 
-    # Estimate PI using stochastic integration of (1-x^2)
-    Z_x = (1-samples.x**2)**0.5
-    samples['est_func'] = 4*Z_x.cumsum()/np.arange(1,iters+1)
-
     return samples
 
 if __name__ == "__main__":
