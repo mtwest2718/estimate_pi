@@ -54,38 +54,61 @@ def sampling_jobs(rng_seed, njobs, iters, threads):
     for i in range(njobs):
         sample_vars.append(
             {'seed': str(seed_nums[i]), 'iters': str(iters), 'threads': str(threads),
-            'outfile': 'samples_{}.csv'.format(i), "id": str(i)}
+            'outfile': f'samples_{i}.csv', "id": str(i)}
         )
-
     return {'submit': sample_sub, 'vars': sample_vars}
 
+def summary_job(sample_files, outfile):
+    summ_sub = htcondor.Submit(
+        executable = 'pi_summary.py',
+        arguments = '--infiles $(infiles) --outfile ${outfile}',
+        should_transfer_files = "YES",
+        transfer_input_files = 'results/',
+        log = 'logs/summ.log',
+        output = 'logs/summ.out',
+        error = 'logs/summ.err',
+        request_cpus = '1',
+        request_memory = '1GB',
+        request_disk = '1GB',
+    )
+    summ_vars = [{'infiles': ' '.join(sample_files), 'outfile': outfile}]
+    return {'submit': summ_sub, 'vars': summ_vars}
 
-def trace_plot_jobs(njobs, threads):
+def trace_plot_job(summ_file):
     # Define the Trace plot Jobs (submit file)
     trace_sub = htcondor.Submit(
         executable = 'pi_trace.py',
-        arguments = '--infiles $(infiles) --estimator $(est_type)',
+        arguments = '--infile $(infile)',
         should_transfer_files = "YES",
         transfer_input_files = 'results/',
         log = 'logs/trace.log',
-        output = 'logs/trace_$(est_type).out',
-        error = 'logs/trace_$(est_type).err',
+        output = 'logs/trace.out',
+        error = 'logs/trace.err',
         request_cpus = '1',
         request_memory = '1GB',
-        request_disk = '3GB',
+        request_disk = '1GB',
     )
-    # list of input files for trace plots
-    files_list = [f"samples_{j}.csv" for j in range(njobs)]
-    if args.threads > 1:
-        files_list = [
-            f.replace('.', f"_{i}.") for i in range(threads) for f in files_list
-        ]
     # construct input arg dicts for trace plotting jobs
-    trace_vars = []
-    for est_type in ['area', 'func']:
-        trace_vars.append({'infiles': ' '.join(files_list), 'est_type': est_type})
-
+    trace_vars = [{'infiles': summ_file}]
     return {'submit': trace_sub, 'vars': trace_vars}
+
+def var_plot_job(summ_file):
+    # Define the Variance plot Jobs (submit file)
+    var_sub = htcondor.Submit(
+        executable = 'pi_variance.py',
+        arguments = '--infile $(infile)',
+        should_transfer_files = "YES",
+        transfer_input_files = 'results/',
+        log = 'logs/var.log',
+        output = 'logs/var.out',
+        error = 'logs/var.err',
+        request_cpus = '1',
+        request_memory = '1GB',
+        request_disk = '1GB',
+    )
+    # construct input arg dicts for trace plotting jobs
+    var_vars = [{'infiles': summ_file}]
+    return {'submit': var_sub, 'vars': var_vars}
 
 
 if __name__ == "__main__":
@@ -111,12 +134,34 @@ if __name__ == "__main__":
         submit_description=sampling['submit'], vars=sampling['vars']
     )
 
-    # Add the plotting job layer to DAG
-    plotting = trace_plot_jobs(args.njobs, args.threads)
-    if args.verbose: print("\tAdd plotting layer to DAG")
-    trace_layer = sample_layer.child_layer(
+    samp_files = [f['outfile'] for f in sampling['var']]
+    if args.threads > 1:
+        infiles = [F.replace('.csv', f"_{i}.csv") for i in range(threads) for F in samp_files]
+    else:
+        infiles = samp_files
+    summ_file = 'summ_estimate.csv'
+    # Add summary job layer to DAG
+    if args.verbose: print("\tAdd summary layer to DAG")
+    summary = summary_job(sfiles, summ_file)
+    summ_layer = sample_layer.child_layer(
+        name='summary',
+        submit_description=summary['submit'], vars=summary['vars']
+    )
+
+    # Add the trace plotting job layer to DAG
+    trace = trace_plot_job(summ_file)
+    if args.verbose: print("\tAdd plotting traces layer to DAG")
+    trace_layer = summary_layer.child_layer(
         name='trace',
-        submit_description=plotting['submit'], vars=plotting['vars']
+        submit_description=trace['submit'], vars=trace['vars']
+    )
+
+    # Add the variance plotting job layer to DAG
+    variance = var_plot_job(summ_file)
+    if args.verbose: print("\tAdd plotting variance layer to DAG")
+    var_layer = summary_layer.child_layer(
+        name='variance',
+        submit_description=variance['submit'], vars=variance['vars']
     )
 
     ## Write DAG file to disk
@@ -131,8 +176,7 @@ if __name__ == "__main__":
             str(dag_file), {'force': 1, 'batch-name': 'MmmmmPi'}
         )
 
-        schedd = htcondor.Schedd()
         if args.verbose: print("Submit workflow to queue")
         # Connect to the Scheduler and submit the DAGman job
-        with schedd.transaction() as txn:
-            cluster_id = dag_submit.queue(txn)
+        schedd = htcondor.Schedd()
+        schedd.submit(dag_submit)
