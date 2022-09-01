@@ -38,10 +38,10 @@ if __name__ == "__main__":
 
     print("# Input arguments for this job")
     for (k, v) in vars(args).items():
-        print("{} = {}".format(k, v))
+        print(f"{k} = {v}")
 
     if args.iters % args.threads != 0:
-        sys.exit("--iters ({}) must be a multiple of --threads ({})".format(args.iters, args.threads))
+        sys.exit(f"--iters ({args.iters}) must be a multiple of --threads ({args.threads})")
 
     # Generate samples in unit square and check if within quarter circle
     if args.threads > 1:
@@ -53,10 +53,10 @@ if __name__ == "__main__":
         )
         with Pool(processes=args.threads) as pool:
             samples = pool.starmap(sample_square, sample_args)
-            for k, df in enumerate(samples):
+            for m, df in enumerate(samples):
                 # Add thread number to output samples filename
-                outfile = args.outfile.replace('.csv', '_{}.csv'.format(k))
-                print("Saving subprocess {} table to disk".format(k))
+                outfile = args.outfile.replace('.csv', f"_{m}.csv")
+                print(f"Saving subprocess {m} table to disk")
                 df.to_csv(outfile, index=False)
     else:
         samples = sample_square(args.seed, args.iters)
