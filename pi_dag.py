@@ -127,7 +127,9 @@ if __name__ == "__main__":
 
     ## Making the DAG
     if args.verbose: print("Generate DAG object")
-    pi_dag = dags.DAG()
+    pi_dag = dags.DAG(
+        dot_config=dags.DotConfig(join(this_dir,'results','pi.dot'))
+    )
 
     # Add sampling jobs layer to DAG
     sampling = sampling_jobs(args.seed, args.njobs, args.iters, args.threads)
