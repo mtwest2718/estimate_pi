@@ -70,7 +70,7 @@ def summary_job(sample_files, outfile):
         error = '../logs/summ.err',
         request_cpus = '1',
         request_memory = '1GB',
-        request_disk = '1GB',
+        request_disk = '10GB',
     )
     summ_vars = [{'infiles': ' '.join(sample_files), 'outfile': outfile, 'transfer': ','.join(sample_files)}]
     return {'submit': summ_sub, 'vars': summ_vars}
