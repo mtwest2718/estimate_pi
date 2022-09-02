@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
     samp_files = [f['outfile'] for f in sampling['vars']]
     if args.threads > 1:
-        infiles = [F.replace('.csv', f"_{i}.csv") for i in range(threads) for F in samp_files]
+        infiles = [F.replace('.csv', f"_{i}.csv") for i in range(args.threads) for F in samp_files]
     else:
         infiles = samp_files
     summ_file = 'summ_estimate.csv'
