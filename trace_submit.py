@@ -1,27 +1,24 @@
 import htcondor
 import pdb
 
-njobs = 4
+summ_file = 'summ_estimate.csv'
 
-input_files = ' '.join([f"samples_{j}.csv" for j in range(njobs)])
-trace_vars = []
-
+# Define the Trace plot Jobs (submit file)
 trace_sub = htcondor.Submit(
     executable = 'pi_trace.py',
-    arguments = '--infiles $(infiles) --estimator $(est_type)',
+    arguments = '--infile $(infile)',
     should_transfer_files = "YES",
-    transfer_input_files = 'results/',
-    log = 'log/trace.log',
-    output = 'out/trace_$(ProcID).out',
-    error = 'err/trace_$(ProcID).err',
+    initialdir = 'results/',
+    transfer_input_files = '$(infile)',
+    log = '../logs/trace.log',
+    output = '../logs/trace.out',
+    error = '../logs/trace.err',
     request_cpus = '1',
-    request_memory = '3GB',
-    request_disk = '500MB'
+    request_memory = '1GB',
+    request_disk = '1GB',
 )
-
-for est_type in ['area', 'func']:
-    trace_vars.append({'infiles': input_files, 'est_type': est_type})
+# construct input arg dicts for trace plotting jobs
+trace_vars = [{'infile': summ_file}]
 
 schedd = htcondor.Schedd()
-with schedd.transaction() as txn:
-    trace_sub.queue_with_itemdata(txn, itemdata=iter(trace_vars))
+submit_result = schedd.submit(trace_sub, itemdata=iter(trace_vars))
